@@ -26,7 +26,7 @@ class SensorManager:
 
         self.ser = setup_serial(commport, baudrate)
         self.window_size = window_size
-        self.shm, data_shared, self.plot = create_shared_block(grid_plot_flag=True,
+        self.shm, self.data_shared, self.plot = create_shared_block(grid_plot_flag=True,
                                                                channel_key=channel_key,
                                                                num_points=num_points)
 
@@ -38,8 +38,8 @@ class SensorManager:
             "ser": self.ser,
             "shm_name": self.shm.name,
             "plot": self.plot,
-            "shape": data_shared.shape,
-            "dtype": data_shared.dtype
+            "shape": self.data_shared.shape,
+            "dtype": self.data_shared.dtype
         }
 
         self.dynamic_args_dict = {

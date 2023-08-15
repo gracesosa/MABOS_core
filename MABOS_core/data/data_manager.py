@@ -19,13 +19,13 @@ def update_save_data(args_dict: dict, queue):
         shape = args_dict["shape"]
         dtype = args_dict["dtype"]
         channel_key = args_dict["channel_key"]
-    except:
+    except ValueError:
         raise ValueError(f"args_dict {args_dict} should contain the following keys:\n"
                          f"ser, shm_name, mutex, shape, dtype, channel_key, num_points")
 
     try:
         dynamic_args_dict = queue.get()
-    except:
+    except ValueError:
         raise ValueError(f"Queue {queue} is empty upon initialization, please restart process")
 
     while True:
