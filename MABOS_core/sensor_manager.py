@@ -5,6 +5,25 @@ import multiprocessing
 from warnings import warn
 import threading
 import os
+import sys
+import pickle
+def setup_process_start_method():
+    if sys.platform.startswith('win'):
+        multiprocessing.set_start_method("spawn", force=True)
+    elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin') or sys.platform.startswith('darwin'):
+        multiprocessing.set_start_method("fork", force=True)
+    else:
+        raise EnvironmentError('Unsupported platform')
+
+
+def setup_queue(dict: dict):
+    """ Setup queue to hold dynamic parameter dictionaries
+    :param dict: dictionary of parameters to put into queue
+    :return: queue object
+    """
+    q = multiprocessing.Queue()
+    q.put(dict)
+    return q
 
 
 class SensorManager:
@@ -20,7 +39,7 @@ class SensorManager:
         """
 
         # Ensures all resources available to parent process are identical to child process. Needed for windows & macOS
-        multiprocessing.set_start_method('fork', force = True)
+        setup_process_start_method()
 
         mutex = create_mutex()
 
@@ -46,7 +65,8 @@ class SensorManager:
             "num_points": num_points,
             "window_size": self.window_size
         }
-        self.q1 = self.setup_queue()
+        self.stat_q = setup_queue(dict=self.args_dict)
+        self.dyn_q = setup_queue(dict=self.dynamic_args_dict)
 
     def update_process(self, save_data: bool = True):
         """ Initialize dedicated process to update data
@@ -58,11 +78,11 @@ class SensorManager:
         if save_data:
             p = multiprocessing.Process(name='update',
                                         target=update_save_data,
-                                        args=(self.args_dict, self.q1,))
+                                        args=(self.stat_q, self.dyn_q,))
         else:
             p = multiprocessing.Process(name='update',
                                         target=update_data,
-                                        args=(self.args_dict, self.q1,))
+                                        args=(self.stat_q, self.dyn_q,))
         return p
 
     def update_params(self, params: dict):
@@ -75,19 +95,10 @@ class SensorManager:
         for param_key in params.keys():
             if param_key in master_keys:
                 self.dynamic_args_dict[f"{param_key}"] = params[f"{param_key}"]
-                self.update_queue(self.q1)
+                self.update_queue(self.dyn_q)
             else:
                 warn(f"Parameter key {param_key} does not exist in dynamic parameter dictionary\n"
                      f"{self.dynamic_args_dict}")
-
-    def setup_queue(self):
-        """ Setup queue to hold dynamic parameter dictionaries
-
-        :return: queue object
-        """
-        q = multiprocessing.Queue()
-        q.put(self.dynamic_args_dict)
-        return q
 
     def update_queue(self, q):
         """ Adding item to existing queue object
