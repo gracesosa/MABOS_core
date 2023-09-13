@@ -1,6 +1,6 @@
 import numpy as np
 import MABOS_core.memory as mm
-import MABOS_core.serial.ser_manager as sm
+import MABOS_core.serial as sm
 
 
 def update_save_data(args_dict: dict, queue):

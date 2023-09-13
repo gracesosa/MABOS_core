@@ -1,7 +1,7 @@
 import numpy as np
-
+import time
 import MABOS_core.memory.mem_manager as mm
-from ._plot_utils import *
+from MABOS_core.plot._plot_utils import *
 from typing import *
 from multiprocessing.shared_memory import SharedMemory
 
@@ -95,11 +95,15 @@ def obtain_grid_plot_data(args_dict: dict):
     shape = args_dict["shape"]
     dtype = args_dict["dtype"]
     channel_key = args_dict["channel_key"]
+
     # Acquire Shared Memory Object data
     mm.acquire_mutex(mutex)
     shm = SharedMemory(shm_name)
     data_shared = np.ndarray(shape=shape, dtype=dtype,
                              buffer=shm.buf)
+    
+    start_time = time.time() #Record start time
+
     for i, subplot in enumerate(grid_plot):
         yi = data_shared[i+1][0]
         cumsum = np.cumsum(np.insert(data_shared[i+1][:], 0, [yi]*3))
@@ -108,3 +112,7 @@ def obtain_grid_plot_data(args_dict: dict):
         subplot[channel_key[i]].data = data
         subplot.auto_scale(maintain_aspect=False)
     mm.release_mutex(mutex)
+
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    print("Elapsed time: {elapsed_time}")

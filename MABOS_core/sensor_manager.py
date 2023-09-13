@@ -2,6 +2,7 @@ from MABOS_core.data.data_manager import *
 from MABOS_core.memory.mem_manager import *
 from MABOS_core.serial.ser_manager import *
 import multiprocessing
+import platform
 from warnings import warn
 import threading
 import os
@@ -20,7 +21,10 @@ class SensorManager:
         """
 
         # Ensures all resources available to parent process are identical to child process. Needed for windows & macOS
-        multiprocessing.set_start_method('fork')
+        if platform.system() == 'Windows' or platform.system() == 'Darwin': #Added spawn start method for Windows & macOS
+            multiprocessing.set_start_method('spawn')
+        else:
+            multiprocessing.set_start_method('fork')
 
         mutex = create_mutex()
 
